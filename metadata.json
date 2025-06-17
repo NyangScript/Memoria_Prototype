@@ -1,0 +1,8 @@
+{
+  "name": "Memoria: Behavior Monitoring",
+  "description": "A React web application for monitoring patient behavior using camera feeds and AI analysis, logging abnormal or dangerous activities, and providing emergency contact options. Designed for caregivers.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "prompt": ""
+}
