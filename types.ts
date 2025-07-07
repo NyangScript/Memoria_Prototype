@@ -5,6 +5,19 @@ export enum BehaviorType {
   NORMAL = "Normal",
 }
 
+export enum ChatRole {
+  USER = "user",
+  MODEL = "model",
+}
+
+export interface ChatMessage {
+  id: string;
+  role: ChatRole;
+  text: string;
+  timestamp: Date;
+  isStreaming?: boolean;
+}
+
 export interface BehaviorLogEntry {
   id: string;
   timestamp: Date;

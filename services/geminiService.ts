@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse, Chat, Content } from "@google/genai";
 import { GEMINI_TEXT_MODEL, GEMINI_ANALYSIS_PROMPT_TEMPLATE } from '../constants';
 import { AnalysisResponse, BehaviorType } from "../types";
 
@@ -65,10 +65,42 @@ export const analyzeBehaviorFromImage = async (
     }
   } catch (error) {
     console.error("Gemini 이미지 분석 오류:", error);
-    // let errorMessage = "행동 분석에 실패했습니다. 다시 시도해주세요."; // Original variable, can be kept or removed if not used below directly for return
     if (error instanceof Error) {
         // errorMessage = `AI 분석 오류: ${error.message}`; // For developer logging if needed
     }
     return { behaviorType: BehaviorType.NORMAL, description: "AI 분석 중 오류가 발생했습니다. 네트워크 연결을 확인하거나 잠시 후 다시 시도해주세요." };
   }
 };
+
+
+const CHAT_SYSTEM_INSTRUCTION = `You are a friendly and empathetic AI assistant for caregivers. Provide helpful advice, emotional support, and information related to caregiving for patients with conditions like dementia. Your name is Memoria Assistant. Please always answer in Korean.`;
+
+export async function* streamChat(history: Content[], newMessage: string) {
+    if (!ai) {
+        const mockMessage = "AI 응답 기능이 비활성화 상태입니다. Gemini API 키를 확인해주세요.";
+        for (let i = 0; i < mockMessage.length; i++) {
+            await new Promise(resolve => setTimeout(resolve, 30));
+            yield mockMessage.substring(0, i + 1);
+        }
+        return;
+    }
+
+    try {
+        const chat = ai.chats.create({
+            model: GEMINI_TEXT_MODEL,
+            history,
+            config: {
+              systemInstruction: CHAT_SYSTEM_INSTRUCTION,
+            }
+        });
+
+        const result = await chat.sendMessageStream({ message: newMessage });
+
+        for await (const chunk of result) {
+            yield chunk.text;
+        }
+    } catch(error) {
+        console.error("Gemini chat error:", error);
+        yield "죄송합니다. 메시지를 처리하는 중 오류가 발생했습니다. 네트워크 연결을 확인하거나 잠시 후 다시 시도해주세요.";
+    }
+}

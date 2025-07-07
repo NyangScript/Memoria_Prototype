@@ -100,7 +100,7 @@ const Esp32WebPage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="relative aspect-video sm:aspect-[16/9] md:aspect-[4/3] border border-gray-300 rounded-md overflow-hidden bg-gray-100">
+            <div className="relative h-[80vh] border border-gray-300 rounded-md overflow-hidden bg-gray-100">
               {(isIframeLoading && !error) && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 bg-opacity-85 z-10">
                   <ArrowPathIcon className="w-12 h-12 text-sky-500 animate-spin mb-3" />
@@ -136,15 +136,6 @@ const Esp32WebPage: React.FC = () => {
               )}
             </div>
           )}
-        </div>
-        <div className="bg-white p-4 rounded-xl shadow-lg">
-            <h3 className="font-semibold text-gray-700 mb-2">도움말</h3>
-            <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                <li>ESP32 웹 서버가 Memoria 앱과 동일한 네트워크에 연결되어 있는지 확인하세요.</li>
-                <li>ESP32의 IP 주소가 변경되었다면, 위 'URL 설정' 또는 설정 메뉴에서 주소를 업데이트해야 합니다.</li>
-                <li>방화벽 설정이 ESP32로의 접근을 막고 있지 않은지 확인하세요.</li>
-                <li>ESP32 웹 서버 프로그램이 정상적으로 실행 중인지 확인하세요 (예: 시리얼 모니터 로그).</li>
-            </ul>
         </div>
       </div>
     </PageLayout>

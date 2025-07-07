@@ -116,10 +116,6 @@ const Esp32UrlSettingsPage: React.FC = () => {
              <p className="text-sm text-gray-500 text-center mt-2">현재 저장된 주소와 동일합니다.</p>
           )}
         </div>
-        <div className="mt-6 text-xs text-gray-500 bg-gray-50 p-3 rounded-md">
-            <p><strong>참고:</strong> ESP32 장치가 Memoria 앱을 실행하는 기기와 동일한 Wi-Fi 네트워크에 연결되어 있는지 확인해주세요.</p>
-            <p className="mt-1">URL은 프로토콜(http:// 또는 https://)을 포함해야 합니다. 일반적으로 ESP32는 http://를 사용합니다.</p>
-        </div>
       </div>
     </PageLayout>
   );

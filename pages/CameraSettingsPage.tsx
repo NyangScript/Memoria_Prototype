@@ -89,12 +89,6 @@ const CameraSettingsPage: React.FC = () => {
           ))}
         </fieldset>
 
-        {selectedSource === 'device' && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-300 rounded-md text-yellow-700 text-sm">
-                <p><strong>참고:</strong> 기기 카메라 사용 시 브라우저에서 카메라 접근 권한 요청이 표시될 수 있습니다. 원활한 사용을 위해 권한을 허용해주세요.</p>
-            </div>
-        )}
-
         <button
           onClick={handleSave}
           disabled={isSaving || isLoadingSettings || currentSource === selectedSource}

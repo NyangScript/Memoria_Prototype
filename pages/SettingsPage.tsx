@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '../components/PageLayout';
 import { ROUTES } from '../constants';
-import { UserCircleIcon, Cog6ToothIcon, ChevronRightIcon, VideoCameraIcon, ComputerDesktopIcon, ServerStackIcon } from '../components/icons'; // Added ServerStackIcon
+import { UserCircleIcon, ChevronRightIcon, VideoCameraIcon, ServerStackIcon } from '../components/icons';
 
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -19,12 +19,6 @@ const SettingsPage: React.FC = () => {
       icon: VideoCameraIcon, 
       route: ROUTES.CAMERA_SETTINGS,
       description: '기본 카메라 소스를 선택합니다 (ESP32 또는 기기 카메라).'
-    },
-    {
-      label: 'ESP32 웹 페이지 보기',
-      icon: ComputerDesktopIcon,
-      route: ROUTES.ESP32_WEB_PAGE,
-      description: 'ESP32에서 호스팅되는 웹 페이지를 앱 내에서 확인합니다.'
     },
     {
       label: 'ESP32 서버 주소 설정', // New setting item

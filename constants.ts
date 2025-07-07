@@ -4,12 +4,12 @@ export const ROUTES = {
   HOME: '/',
   ABNORMAL_LOG: '/abnormal-log',
   DANGEROUS_LOG: '/dangerous-log', // Route path remains for simplicity
+  CHAT: '/chat', // New route for Chat
   REPORT: '/report',
   REPORT_ERROR: '/report-error',
   SETTINGS: '/settings',
   PROFILE_SETTINGS: '/settings/profile', 
   CAMERA_SETTINGS: '/settings/camera',
-  ESP32_WEB_PAGE: '/settings/esp32-webpage',
   ESP32_URL_SETTINGS: '/settings/esp32-url-config', // New route for ESP32 URL configuration
 };
 

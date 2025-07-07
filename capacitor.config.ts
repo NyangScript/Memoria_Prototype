@@ -8,7 +8,7 @@ const config: CapacitorConfig = {
     allowMixedContent: true
   },
   server: {
-    // Remove allowMixedContent here as it's not a valid property directly under server
+    androidScheme: 'http'
   }
 };
 

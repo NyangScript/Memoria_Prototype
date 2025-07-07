@@ -8,13 +8,14 @@ import ReportErrorPage from './pages/ReportErrorPage';
 import SettingsPage from './pages/SettingsPage';
 import ProfileSettingsPage from './pages/ProfileSettingsPage'; 
 import CameraSettingsPage from './pages/CameraSettingsPage';   
-import Esp32WebPage from './pages/Esp32WebPage'; 
-import Esp32UrlSettingsPage from './pages/Esp32UrlSettingsPage'; // Import new ESP32 URL settings page
+import Esp32UrlSettingsPage from './pages/Esp32UrlSettingsPage';
+import ChatPage from './pages/ChatPage'; // Import new Chat page
 import BottomNav from './components/BottomNav';
 import { BehaviorLogProvider } from './contexts/BehaviorLogContext';
 import { UserProfileProvider } from './contexts/UserProfileContext';
 import { CameraSettingsProvider } from './contexts/CameraSettingsContext'; 
-import { Esp32ConfigProvider } from './contexts/Esp32ConfigContext'; // Import ESP32 Config provider
+import { Esp32ConfigProvider } from './contexts/Esp32ConfigContext';
+import { ChatHistoryProvider } from './contexts/ChatHistoryContext'; // Import new Chat history provider
 import { ROUTES } from './constants';
 
 const LoadingScreen: React.FC = () => (
@@ -36,13 +37,13 @@ const AppContent: React.FC = () => {
           <Route path={ROUTES.HOME} element={<MainPage />} />
           <Route path={ROUTES.ABNORMAL_LOG} element={<AbnormalLogPage />} />
           <Route path={ROUTES.DANGEROUS_LOG} element={<DangerousLogPage />} />
+          <Route path={ROUTES.CHAT} element={<ChatPage />} />
           <Route path={ROUTES.REPORT} element={<ReportEmergencyPage />} />
           <Route path={ROUTES.REPORT_ERROR} element={<ReportErrorPage />} />
           <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
           <Route path={ROUTES.PROFILE_SETTINGS} element={<ProfileSettingsPage />} /> 
           <Route path={ROUTES.CAMERA_SETTINGS} element={<CameraSettingsPage />} />   
-          <Route path={ROUTES.ESP32_WEB_PAGE} element={<Esp32WebPage />} />
-          <Route path={ROUTES.ESP32_URL_SETTINGS} element={<Esp32UrlSettingsPage />} /> {/* Add ESP32 URL settings route */}
+          <Route path={ROUTES.ESP32_URL_SETTINGS} element={<Esp32UrlSettingsPage />} />
         </Routes>
       </div>
       <BottomNav />
@@ -66,10 +67,12 @@ const App: React.FC = () => {
     <UserProfileProvider>
       <BehaviorLogProvider>
         <CameraSettingsProvider> 
-          <Esp32ConfigProvider> {/* Wrap with ESP32ConfigProvider */}
-            <HashRouter>
-              <AppContent />
-            </HashRouter>
+          <Esp32ConfigProvider>
+            <ChatHistoryProvider>
+              <HashRouter>
+                <AppContent />
+              </HashRouter>
+            </ChatHistoryProvider>
           </Esp32ConfigProvider>
         </CameraSettingsProvider>
       </BehaviorLogProvider>
