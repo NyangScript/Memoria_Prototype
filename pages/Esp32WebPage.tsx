@@ -131,7 +131,6 @@ const Esp32WebPage: React.FC = () => {
                     title="ESP32 Web Page"
                     onLoad={handleIframeLoad}
                     onError={handleIframeError}
-                    sandbox="allow-scripts allow-forms allow-popups allow-modals allow-top-navigation allow-downloads" // Slightly more permissive sandbox
                   />
               )}
             </div>

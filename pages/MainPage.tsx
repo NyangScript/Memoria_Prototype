@@ -1,16 +1,18 @@
 
 
 
+
+
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '../components/PageLayout';
 import { useBehaviorLogs } from '../contexts/BehaviorLogContext';
 import { useUserProfile } from '../contexts/UserProfileContext'; 
 import { QuestionMarkCircleIcon, ExclamationTriangleIcon, BellIcon, UserCircleIcon, ArrowPathIcon, AdjustmentsHorizontalIcon, InformationCircleIcon, Cog6ToothIcon } from '../components/icons'; 
-import { ROUTES, DEFAULT_PATIENT_NAME, DEFAULT_ANALYSIS_LOCATION } from '../constants';
+import { ROUTES, DEFAULT_PATIENT_NAME } from '../constants';
 import BehaviorStatsCard from '../components/BehaviorStatsCard';
 import { useEsp32Config } from '../contexts/Esp32ConfigContext';
-import { AnalysisResponse, BehaviorType } from '../types';
 
 const QuickActions: React.FC<{
   abnormalCount: number;
@@ -46,7 +48,7 @@ const QuickActions: React.FC<{
 
 const MainPage: React.FC = () => {
   const navigate = useNavigate();
-  const { addLog, abnormalBehaviorCountLastWeek, dangerousBehaviorCountLastWeek } = useBehaviorLogs();
+  const { abnormalBehaviorCountLastWeek, dangerousBehaviorCountLastWeek } = useBehaviorLogs();
   const { profile, isLoading: isProfileLoading } = useUserProfile(); 
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -54,40 +56,6 @@ const MainPage: React.FC = () => {
   const [iframeKey, setIframeKey] = useState(Date.now());
   const [isIframeLoading, setIsIframeLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const handleIframeMessage = (event: MessageEvent) => {
-        try {
-            // Very basic origin check. A production app should be more specific.
-            if (new URL(event.origin).origin !== new URL(esp32Url).origin) {
-                return;
-            }
-        } catch (e) {
-            return; // Ignore if URLs are invalid
-        }
-
-        if (event.data && event.data.type === 'MEMORIA_ANALYSIS_RESULT') {
-            const result = event.data.payload as AnalysisResponse;
-
-            if (result && result.behaviorType && result.description) {
-                // Log only if it's not a normal, generic "no activity" message.
-                if (result.behaviorType !== BehaviorType.NORMAL || !result.description.includes("특정 활동/상황 감지 안됨")) {
-                     addLog({
-                        type: result.behaviorType,
-                        description: result.description,
-                        location: result.locationGuess || DEFAULT_ANALYSIS_LOCATION,
-                    });
-                }
-            }
-        }
-    };
-
-    window.addEventListener('message', handleIframeMessage);
-    return () => {
-        window.removeEventListener('message', handleIframeMessage);
-    };
-  }, [addLog, esp32Url]);
-
 
   const handleReload = useCallback(() => {
     if (isDefaultUrl || isLoadingConfig) return;
@@ -232,7 +200,6 @@ const MainPage: React.FC = () => {
                     title="ESP32 Web Page"
                     onLoad={handleIframeLoad}
                     onError={handleIframeError}
-                    sandbox="allow-scripts allow-forms allow-popups allow-modals allow-top-navigation allow-downloads"
                   />
               )}
             </div>

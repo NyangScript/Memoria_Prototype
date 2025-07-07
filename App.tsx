@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { HashRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, useLocation } from 'react-router-dom';
 import MainPage from './pages/MainPage';
 import AbnormalLogPage from './pages/AbnormalLogPage';
 import DangerousLogPage from './pages/DangerousLogPage';
@@ -9,14 +10,15 @@ import SettingsPage from './pages/SettingsPage';
 import ProfileSettingsPage from './pages/ProfileSettingsPage'; 
 import CameraSettingsPage from './pages/CameraSettingsPage';   
 import Esp32UrlSettingsPage from './pages/Esp32UrlSettingsPage';
-import ChatPage from './pages/ChatPage'; // Import new Chat page
+import ChatPage from './pages/ChatPage';
 import BottomNav from './components/BottomNav';
-import { BehaviorLogProvider } from './contexts/BehaviorLogContext';
+import { BehaviorLogProvider, useBehaviorLogs } from './contexts/BehaviorLogContext';
 import { UserProfileProvider } from './contexts/UserProfileContext';
 import { CameraSettingsProvider } from './contexts/CameraSettingsContext'; 
-import { Esp32ConfigProvider } from './contexts/Esp32ConfigContext';
-import { ChatHistoryProvider } from './contexts/ChatHistoryContext'; // Import new Chat history provider
-import { ROUTES } from './constants';
+import { Esp32ConfigProvider, useEsp32Config } from './contexts/Esp32ConfigContext';
+import { ChatHistoryProvider } from './contexts/ChatHistoryContext';
+import { ROUTES, DEFAULT_ANALYSIS_LOCATION } from './constants';
+import { AnalysisResponse, BehaviorType } from './types';
 
 const LoadingScreen: React.FC = () => (
   <div className="fixed inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-sky-400 to-cyan-300 z-[100]">
@@ -29,22 +31,77 @@ const LoadingScreen: React.FC = () => (
   </div>
 );
 
+const PageComponentMap: { [key: string]: React.ReactElement } = {
+  [ROUTES.HOME]: <MainPage />,
+  [ROUTES.ABNORMAL_LOG]: <AbnormalLogPage />,
+  [ROUTES.DANGEROUS_LOG]: <DangerousLogPage />,
+  [ROUTES.CHAT]: <ChatPage />,
+  [ROUTES.REPORT]: <ReportEmergencyPage />,
+  [ROUTES.REPORT_ERROR]: <ReportErrorPage />,
+  [ROUTES.SETTINGS]: <SettingsPage />,
+  [ROUTES.PROFILE_SETTINGS]: <ProfileSettingsPage />,
+  [ROUTES.CAMERA_SETTINGS]: <CameraSettingsPage />,
+  [ROUTES.ESP32_URL_SETTINGS]: <Esp32UrlSettingsPage />,
+};
+
+
 const AppContent: React.FC = () => {
+  const { addLog } = useBehaviorLogs();
+  const { esp32Url, isDefaultUrl } = useEsp32Config();
+  const location = useLocation();
+
+  useEffect(() => {
+    // Do not set up listener if URL is not configured
+    if (isDefaultUrl) return;
+
+    const handleIframeMessage = (event: MessageEvent) => {
+      try {
+        // More robust origin check: only compare hostnames to avoid port conflicts.
+        if (event.origin !== window.origin && new URL(event.origin).hostname !== new URL(esp32Url).hostname) {
+          return;
+        }
+      } catch (e) {
+        console.warn("Could not validate message origin:", event.origin);
+        return; // Ignore if URLs are invalid and cannot be parsed
+      }
+
+      if (event.data && event.data.type === 'MEMORIA_ANALYSIS_RESULT') {
+        const result = event.data.payload as AnalysisResponse;
+
+        if (result && result.behaviorType && result.description) {
+          // Log only if it's not a normal, generic "no activity" message.
+          if (result.behaviorType !== BehaviorType.NORMAL || !result.description.includes("특정 활동/상황 감지 안됨")) {
+            addLog({
+              type: result.behaviorType,
+              description: result.description,
+              location: result.locationGuess || DEFAULT_ANALYSIS_LOCATION,
+            });
+          }
+        }
+      }
+    };
+
+    window.addEventListener('message', handleIframeMessage);
+
+    // Cleanup function
+    return () => {
+      window.removeEventListener('message', handleIframeMessage);
+    };
+  }, [addLog, esp32Url, isDefaultUrl]);
+
+
   return (
     <div className="flex flex-col min-h-screen bg-sky-50">
-      <div className="flex-grow pb-16"> {/* Padding bottom for BottomNav */}
-        <Routes>
-          <Route path={ROUTES.HOME} element={<MainPage />} />
-          <Route path={ROUTES.ABNORMAL_LOG} element={<AbnormalLogPage />} />
-          <Route path={ROUTES.DANGEROUS_LOG} element={<DangerousLogPage />} />
-          <Route path={ROUTES.CHAT} element={<ChatPage />} />
-          <Route path={ROUTES.REPORT} element={<ReportEmergencyPage />} />
-          <Route path={ROUTES.REPORT_ERROR} element={<ReportErrorPage />} />
-          <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
-          <Route path={ROUTES.PROFILE_SETTINGS} element={<ProfileSettingsPage />} /> 
-          <Route path={ROUTES.CAMERA_SETTINGS} element={<CameraSettingsPage />} />   
-          <Route path={ROUTES.ESP32_URL_SETTINGS} element={<Esp32UrlSettingsPage />} />
-        </Routes>
+       <div className="flex-grow pb-16" style={{ position: 'relative' }}>
+        {Object.entries(PageComponentMap).map(([path, component]) => (
+          <div
+            key={path}
+            style={{ display: location.pathname === path ? 'block' : 'none' }}
+            className="page-container h-full w-full"
+          >
+            {component}
+          </div>
+        ))}
       </div>
       <BottomNav />
     </div>
