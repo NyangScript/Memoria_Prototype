@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { BehaviorLogEntry, BehaviorType } from '../types';
-import { QuestionMarkCircleIcon, ExclamationTriangleIcon, InformationCircleIcon } from './icons';
 import { BEHAVIOR_TYPE_KOREAN, mapDescriptionToCategory } from '../constants';
 
 interface ActivityCardProps {
@@ -9,38 +8,51 @@ interface ActivityCardProps {
 }
 
 const ActivityCard: React.FC<ActivityCardProps> = ({ log }) => {
-  const Icon = log.type === BehaviorType.ABNORMAL ? QuestionMarkCircleIcon : 
-               log.type === BehaviorType.DANGEROUS ? ExclamationTriangleIcon : 
-               InformationCircleIcon;
-  const colorClass = log.type === BehaviorType.ABNORMAL ? 'border-yellow-500 bg-yellow-50' :
-                     log.type === BehaviorType.DANGEROUS ? 'border-red-500 bg-red-50' :
-                     'border-blue-500 bg-blue-50';
-  const iconColorClass = log.type === BehaviorType.ABNORMAL ? 'text-yellow-600' :
-                         log.type === BehaviorType.DANGEROUS ? 'text-red-600' :
-                         'text-blue-600';
+  const { type, description, location, timestamp } = log;
+  
+  const category = mapDescriptionToCategory(description, type as BehaviorType.ABNORMAL | BehaviorType.DANGEROUS);
+  const typeKorean = BEHAVIOR_TYPE_KOREAN[type];
+  
+  const formatTime = (date: Date) => {
+    return date.toLocaleString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
-  let displayTextPrefix: string;
-
-  if (log.type === BehaviorType.NORMAL) {
-    displayTextPrefix = BEHAVIOR_TYPE_KOREAN[log.type];
-  } else {
-    // For ABNORMAL or DANGEROUS, use mapDescriptionToCategory
-    // Type assertion is safe here as we've checked for NORMAL type.
-    displayTextPrefix = mapDescriptionToCategory(log.description, log.type as BehaviorType.ABNORMAL | BehaviorType.DANGEROUS);
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'Dangerous':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'Abnormal':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
   }
+  };
 
   return (
-    <div className={`p-4 rounded-lg shadow-md border-l-4 ${colorClass} mb-3`}>
-      <div className="flex items-start space-x-3">
-        <Icon className={`w-6 h-6 mt-1 flex-shrink-0 ${iconColorClass}`} />
-        <div>
-          <p className="font-semibold text-gray-800">
-            {displayTextPrefix}: <span className="font-normal">{log.description}</span>
-          </p>
-          <p className="text-sm text-gray-500">
-            {log.timestamp.toLocaleString('ko-KR')} - {log.location}
-          </p>
+    <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex justify-between items-start mb-2">
+        <div className="flex items-center space-x-2">
+          <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getTypeColor(type)}`}>
+            {typeKorean}
+          </span>
+          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+            {category}
+          </span>
         </div>
+        <span className="text-xs text-gray-500">
+          {formatTime(timestamp)}
+        </span>
+      </div>
+      
+      <p className="text-sm text-gray-700 mb-2">{description}</p>
+      <div className="flex justify-between items-center">
+        <span className="text-xs text-gray-500">위치: {location}</span>
       </div>
     </div>
   );

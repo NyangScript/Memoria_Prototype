@@ -1,9 +1,3 @@
-
-
-
-
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '../components/PageLayout';
@@ -13,6 +7,7 @@ import { QuestionMarkCircleIcon, ExclamationTriangleIcon, BellIcon, UserCircleIc
 import { ROUTES, DEFAULT_PATIENT_NAME } from '../constants';
 import BehaviorStatsCard from '../components/BehaviorStatsCard';
 import { useEsp32Config } from '../contexts/Esp32ConfigContext';
+import ForegroundService from '../plugins/ForegroundServicePlugin';
 
 const QuickActions: React.FC<{
   abnormalCount: number;
@@ -56,6 +51,7 @@ const MainPage: React.FC = () => {
   const [iframeKey, setIframeKey] = useState(Date.now());
   const [isIframeLoading, setIsIframeLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [nativeMonitoringStatus, setNativeMonitoringStatus] = useState<string>("백그라운드 모니터링 중...");
 
   const handleReload = useCallback(() => {
     if (isDefaultUrl || isLoadingConfig) return;
@@ -77,6 +73,24 @@ const MainPage: React.FC = () => {
       3. 앱과 ESP32가 동일 네트워크에 있는지.`);
   };
 
+  const handleRestartNativeMonitoring = useCallback(async () => {
+    if (isDefaultUrl || isLoadingConfig) return;
+    
+    try {
+      setNativeMonitoringStatus("백그라운드 모니터링 재시작 중...");
+      await ForegroundService.startForegroundService({
+        behaviorType: "백그라운드 모니터링",
+        description: "ESP32 백그라운드 모니터링을 재시작합니다.",
+        location: "",
+        timestamp: new Date().toISOString(),
+      });
+      setNativeMonitoringStatus("백그라운드 모니터링 중...");
+    } catch (error) {
+      console.error('백그라운드 모니터링 재시작 실패:', error);
+      setNativeMonitoringStatus("백그라운드 모니터링 실패");
+    }
+  }, [isDefaultUrl, isLoadingConfig]);
+
   useEffect(() => {
     if (!isLoadingConfig && !isDefaultUrl) {
         setIsIframeLoading(true); // Assume iframe will start loading
@@ -85,7 +99,6 @@ const MainPage: React.FC = () => {
         setIsIframeLoading(false); // No iframe to load if URL is default/placeholder
     }
   }, [esp32Url, isLoadingConfig, isDefaultUrl]);
-
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -132,7 +145,7 @@ const MainPage: React.FC = () => {
           dangerousCount={dangerousBehaviorCountLastWeek} 
         />
         
-        {/* ESP32 Web View */}
+        {/* ESP32 실시간 모니터링 화면 */}
         <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
           <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
             <h2 className="text-lg font-semibold text-gray-700">실시간 촬영 및 분석 (ESP32)</h2>
@@ -204,6 +217,35 @@ const MainPage: React.FC = () => {
               )}
             </div>
           )}
+        </div>
+
+        {/* 백그라운드 모니터링 상태 */}
+        <div className="bg-white p-4 rounded-xl shadow-lg">
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-3 gap-3">
+            <h3 className="text-md font-semibold text-gray-700">백그라운드 모니터링</h3>
+            <button
+              onClick={handleRestartNativeMonitoring}
+              disabled={isDefaultUrl || isLoadingConfig}
+              className="flex items-center justify-center px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="백그라운드 모니터링 재시작"
+            >
+              <ArrowPathIcon className="w-4 h-4 mr-1" />
+              재시작
+            </button>
+          </div>
+          
+          <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+            <div className="flex items-center space-x-3">
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+              <div className="flex-1">
+                <p className="font-medium text-green-800">{nativeMonitoringStatus}</p>
+                <p className="text-sm text-green-700 mt-1">
+                  앱이 백그라운드에서도 ESP32를 계속 모니터링합니다. 
+                  이상 행동이나 위험 상황이 감지되면 즉시 알림을 받을 수 있습니다.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </PageLayout>

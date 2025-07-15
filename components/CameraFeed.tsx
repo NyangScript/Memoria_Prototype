@@ -146,8 +146,6 @@ const CameraFeed = forwardRef<CameraFeedHandles, CameraFeedProps>((props, ref) =
       let msg = `기기 카메라 오류: ${err.message}`;
       if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
         msg = "사용 가능한 카메라를 찾을 수 없습니다.";
-      } else if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-        msg = "카메라 접근 권한이 거부되었습니다. 앱의 권한 설정을 확인하고, 카메라 시작 버튼을 다시 눌러주세요.";
       } else if (err.name === "NotReadableError") {
         msg = "카메라를 사용할 수 없습니다. 다른 앱에서 사용 중이거나 하드웨어 문제일 수 있습니다.";
       }

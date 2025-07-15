@@ -39,9 +39,9 @@ export const BehaviorLogProvider: React.FC<{ children: ReactNode }> = ({ childre
     }
   }, [logs]);
 
-  const addLog = useCallback((logData: Omit<BehaviorLogEntry, 'id' | 'timestamp'>) => {
+  const addLog = useCallback((log: Omit<BehaviorLogEntry, 'id' | 'timestamp'>) => {
     const newLog: BehaviorLogEntry = {
-      ...logData,
+      ...log,
       id: Date.now().toString() + Math.random().toString(36).substring(2,9), // More unique ID
       timestamp: new Date(),
     };

@@ -3,6 +3,11 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- 포그라운드 서비스 실행을 위한 권한 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Android 13 (API 33) 이상에서 알림을 표시하기 위한 권한 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
 
     <application
         android:allowBackup="true"
@@ -29,6 +34,8 @@
 
         </activity>
 
+        <activity android:name=".Esp32NativeSettingsActivity" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -38,5 +45,12 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!-- 포그라운드 서비스 선언 -->
+        <service
+          android:name=".ForegroundService"
+          android:exported="false"
+          android:foregroundServiceType="specialUse" />
+
     </application>
 </manifest>

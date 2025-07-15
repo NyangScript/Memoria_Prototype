@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '../components/PageLayout';
 import { ROUTES } from '../constants';
-import { UserCircleIcon, ChevronRightIcon, VideoCameraIcon, ServerStackIcon } from '../components/icons';
+import { UserCircleIcon, ChevronRightIcon, VideoCameraIcon, ServerStackIcon, BluetoothIcon } from '../components/icons';
 
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -15,18 +15,17 @@ const SettingsPage: React.FC = () => {
       description: '사용자 이름 및 프로필 사진을 변경합니다.'
     },
     {
-      label: '카메라 설정',
-      icon: VideoCameraIcon, 
-      route: ROUTES.CAMERA_SETTINGS,
-      description: '기본 카메라 소스를 선택합니다 (ESP32 또는 기기 카메라).'
+      label: '블루투스 기기 연결',
+      icon: BluetoothIcon,
+      route: ROUTES.BLUETOOTH_SETTINGS,
+      description: '블루투스 스피커 등 기기를 검색하고 연결합니다.'
     },
     {
-      label: 'ESP32 서버 주소 설정', // New setting item
+      label: 'ESP32 서버 주소 설정',
       icon: ServerStackIcon,
       route: ROUTES.ESP32_URL_SETTINGS,
       description: 'ESP32 웹 서버의 주소(URL)를 설정합니다.'
     },
-    // Add more settings categories here if needed in the future
   ];
 
   return (

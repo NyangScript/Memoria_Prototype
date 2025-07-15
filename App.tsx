@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { HashRouter, useLocation } from 'react-router-dom';
+import { HashRouter, useLocation, useNavigate } from 'react-router-dom';
 import MainPage from './pages/MainPage';
 import AbnormalLogPage from './pages/AbnormalLogPage';
 import DangerousLogPage from './pages/DangerousLogPage';
@@ -8,10 +7,11 @@ import ReportEmergencyPage from './pages/ReportEmergencyPage';
 import ReportErrorPage from './pages/ReportErrorPage';
 import SettingsPage from './pages/SettingsPage';
 import ProfileSettingsPage from './pages/ProfileSettingsPage'; 
-import CameraSettingsPage from './pages/CameraSettingsPage';   
+import BluetoothSettingsPage from './pages/BluetoothSettingsPage';
 import Esp32UrlSettingsPage from './pages/Esp32UrlSettingsPage';
 import ChatPage from './pages/ChatPage';
 import BottomNav from './components/BottomNav';
+import BackgroundStatus from './components/BackgroundStatus';
 import { BehaviorLogProvider, useBehaviorLogs } from './contexts/BehaviorLogContext';
 import { UserProfileProvider } from './contexts/UserProfileContext';
 import { CameraSettingsProvider } from './contexts/CameraSettingsContext'; 
@@ -19,6 +19,8 @@ import { Esp32ConfigProvider, useEsp32Config } from './contexts/Esp32ConfigConte
 import { ChatHistoryProvider } from './contexts/ChatHistoryContext';
 import { ROUTES, DEFAULT_ANALYSIS_LOCATION } from './constants';
 import { AnalysisResponse, BehaviorType } from './types';
+import ForegroundService, { addAnalysisResultListener } from './plugins/ForegroundServicePlugin';
+import { playNativeTTS } from './services/ttsService';
 
 const LoadingScreen: React.FC = () => (
   <div className="fixed inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-sky-400 to-cyan-300 z-[100]">
@@ -40,15 +42,139 @@ const PageComponentMap: { [key: string]: React.ReactElement } = {
   [ROUTES.REPORT_ERROR]: <ReportErrorPage />,
   [ROUTES.SETTINGS]: <SettingsPage />,
   [ROUTES.PROFILE_SETTINGS]: <ProfileSettingsPage />,
-  [ROUTES.CAMERA_SETTINGS]: <CameraSettingsPage />,
+  [ROUTES.BLUETOOTH_SETTINGS]: <BluetoothSettingsPage />,
   [ROUTES.ESP32_URL_SETTINGS]: <Esp32UrlSettingsPage />,
 };
 
 
 const AppContent: React.FC = () => {
-  const { addLog } = useBehaviorLogs();
+  const { logs, addLog } = useBehaviorLogs();
   const { esp32Url, isDefaultUrl } = useEsp32Config();
   const location = useLocation();
+  const navigate = useNavigate();
+  const lastLog = logs.length > 0 ? logs[0] : null;
+
+  // 포그라운드 서비스 시작
+  useEffect(() => {
+    const startForegroundService = async () => {
+      try {
+        await ForegroundService.startForegroundService();
+      } catch (error) {
+        console.error('포그라운드 서비스 시작 실패:', error);
+      }
+    };
+
+    startForegroundService();
+  }, []);
+
+  // 네이티브 Android에서 전송되는 분석 결과 리스너
+  useEffect(() => {
+    const handleNativeAnalysisResult = async (data: any) => {
+      try {
+        console.log('네이티브에서 분석 결과 수신:', data);
+        
+        if (data.behaviorType && data.description) {
+          // BehaviorType enum으로 변환
+          let behaviorType: BehaviorType;
+          switch (data.behaviorType) {
+            case 'Abnormal':
+              behaviorType = BehaviorType.ABNORMAL;
+              break;
+            case 'Dangerous':
+              behaviorType = BehaviorType.DANGEROUS;
+              break;
+            default:
+              behaviorType = BehaviorType.NORMAL;
+              break;
+          }
+
+          // 로그 추가
+          addLog({
+            type: behaviorType,
+            description: data.description,
+            location: data.location || DEFAULT_ANALYSIS_LOCATION,
+            warningMessage: data.warningMessage,
+          });
+
+          // 위험 상황이면 TTS 재생
+          if (behaviorType === BehaviorType.DANGEROUS && data.warningMessage) {
+            playNativeTTS(data.warningMessage);
+          }
+        }
+      } catch (error) {
+        console.error('네이티브 분석 결과 처리 오류:', error);
+      }
+    };
+
+    // 네이티브 이벤트 리스너 등록
+    addAnalysisResultListener(handleNativeAnalysisResult);
+
+    // 앱 시작 시 로컬 로그 불러오기
+    const loadLocalLogs = async () => {
+      try {
+        const result = await ForegroundService.getLocalLogs();
+        if (result.logs && result.logs.length > 0) {
+          console.log('로컬 로그 불러오기:', result.logs.length, '개');
+          
+          // 로컬 로그를 앱 로그에 추가
+          for (const logStr of result.logs) {
+            try {
+              const logData = JSON.parse(logStr);
+              if (logData.type && logData.description) {
+                let behaviorType: BehaviorType;
+                switch (logData.type) {
+                  case 'Abnormal':
+                    behaviorType = BehaviorType.ABNORMAL;
+                    break;
+                  case 'Dangerous':
+                    behaviorType = BehaviorType.DANGEROUS;
+                    break;
+                  default:
+                    behaviorType = BehaviorType.NORMAL;
+                    break;
+                }
+
+                addLog({
+                  type: behaviorType,
+                  description: logData.description,
+                  location: logData.location || DEFAULT_ANALYSIS_LOCATION,
+                });
+              }
+            } catch (parseError) {
+              console.error('로컬 로그 파싱 오류:', parseError);
+            }
+          }
+
+          // 로컬 로그 삭제 (중복 방지)
+          await ForegroundService.clearLocalLogs();
+        }
+      } catch (error) {
+        console.error('로컬 로그 불러오기 오류:', error);
+      }
+    };
+
+    loadLocalLogs();
+  }, [addLog]);
+
+  // 최신 로그가 변경될 때마다 포그라운드 서비스 업데이트
+  useEffect(() => {
+    if (lastLog) {
+      const updateForegroundService = async () => {
+        try {
+          await ForegroundService.startForegroundService({
+            behaviorType: lastLog.type,
+            description: lastLog.description,
+            location: lastLog.location,
+            timestamp: lastLog.timestamp ? lastLog.timestamp.toString() : undefined,
+          });
+        } catch (error) {
+          console.error('포그라운드 서비스 업데이트 실패:', error);
+        }
+      };
+
+      updateForegroundService();
+    }
+  }, [lastLog]);
 
   useEffect(() => {
     // Do not set up listener if URL is not configured
@@ -75,7 +201,12 @@ const AppContent: React.FC = () => {
               type: result.behaviorType,
               description: result.description,
               location: result.locationGuess || DEFAULT_ANALYSIS_LOCATION,
+              warningMessage: result.warningMessage, // 경고 메시지 추가
             });
+            // 경고 메시지가 있으면 네이티브 TTS로 즉시 재생
+            if (result.warningMessage && result.warningMessage.trim() !== '') {
+              playNativeTTS(result.warningMessage);
+            }
           }
         }
       }
@@ -89,10 +220,23 @@ const AppContent: React.FC = () => {
     };
   }, [addLog, esp32Url, isDefaultUrl]);
 
+  // 알림에서 '주소 설정' 버튼 클릭 시 이동 처리
+  useEffect(() => {
+    const handler = (event: any) => {
+      try {
+        const detail = typeof event.detail === 'string' ? JSON.parse(event.detail) : event.detail;
+        if (detail && detail.openEsp32Settings) {
+          navigate(ROUTES.ESP32_URL_SETTINGS);
+        }
+      } catch (e) {}
+    };
+    window.addEventListener('openEsp32Settings', handler);
+    return () => window.removeEventListener('openEsp32Settings', handler);
+  }, [navigate]);
 
   return (
     <div className="flex flex-col min-h-screen bg-sky-50">
-       <div className="flex-grow pb-16" style={{ position: 'relative' }}>
+       <div className={`flex-grow ${lastLog ? 'pb-24' : 'pb-16'}`} style={{ position: 'relative' }}>
         {Object.entries(PageComponentMap).map(([path, component]) => (
           <div
             key={path}
@@ -103,6 +247,7 @@ const AppContent: React.FC = () => {
           </div>
         ))}
       </div>
+      {lastLog && <BackgroundStatus lastLog={lastLog} />}
       <BottomNav />
     </div>
   );

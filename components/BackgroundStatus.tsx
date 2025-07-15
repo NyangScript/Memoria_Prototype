@@ -1,5 +1,5 @@
 import React from 'react';
-import { BehaviorLogEntry } from '../types';
+import { BehaviorLogEntry, BehaviorType } from '../types';
 import { BEHAVIOR_TYPE_KOREAN, mapDescriptionToCategory } from '../constants';
 import { InformationCircleIcon, QuestionMarkCircleIcon, ExclamationTriangleIcon } from './icons';
 
@@ -8,17 +8,38 @@ interface BackgroundStatusProps {
 }
 
 const BackgroundStatus: React.FC<BackgroundStatusProps> = ({ lastLog }) => {
+    if (!lastLog) {
+        return null;
+    }
+
+    const { type, description } = lastLog;
+
     const Icon =
-        lastLog.type === 'Abnormal' ? QuestionMarkCircleIcon :
-        lastLog.type === 'Dangerous' ? ExclamationTriangleIcon :
+        type === BehaviorType.ABNORMAL ? QuestionMarkCircleIcon :
+        type === BehaviorType.DANGEROUS ? ExclamationTriangleIcon :
         InformationCircleIcon;
+    
     const colorClass = 
-        lastLog.type === 'Dangerous' ? 'bg-red-500' : 
-        lastLog.type === 'Abnormal' ? 'bg-yellow-500' :
+        type === BehaviorType.DANGEROUS ? 'bg-red-500' : 
+        type === BehaviorType.ABNORMAL ? 'bg-yellow-500' :
         'bg-sky-500';
 
-    const category = mapDescriptionToCategory(lastLog.description, lastLog.type as any);
-    const logText = `${BEHAVIOR_TYPE_KOREAN[lastLog.type]} (${category}): ${lastLog.description}`;
+    let logText: string;
+
+    try {
+        if (type === BehaviorType.ABNORMAL || type === BehaviorType.DANGEROUS) {
+            const category = mapDescriptionToCategory(description, type);
+            const typeKorean = BEHAVIOR_TYPE_KOREAN[type];
+            logText = `${typeKorean} (${category}): ${description}`;
+        } else {
+            // This now safely handles NORMAL and any other unexpected types.
+            const typeKorean = BEHAVIOR_TYPE_KOREAN[type as keyof typeof BEHAVIOR_TYPE_KOREAN] || '정보';
+            logText = `${typeKorean}: ${description}`;
+        }
+    } catch (error) {
+        console.error("Error creating log text in BackgroundStatus:", error, lastLog);
+        logText = "로그를 표시하는 중 오류가 발생했습니다.";
+    }
     
     return (
         <div 
@@ -31,7 +52,7 @@ const BackgroundStatus: React.FC<BackgroundStatusProps> = ({ lastLog }) => {
                     <Icon className="w-4 h-4" />
                     <span className="font-semibold">백그라운드 모니터링 활성 중...</span>
                 </div>
-                <span className="truncate" style={{ maxWidth: '50%' }}>
+                <span className="truncate" title={logText} style={{ maxWidth: '50%' }}>
                     {logText}
                 </span>
             </div>

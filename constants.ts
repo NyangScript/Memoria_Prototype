@@ -9,8 +9,10 @@ export const ROUTES = {
   REPORT_ERROR: '/report-error',
   SETTINGS: '/settings',
   PROFILE_SETTINGS: '/settings/profile', 
+  BLUETOOTH_SETTINGS: '/settings/bluetooth', // 추가
   CAMERA_SETTINGS: '/settings/camera',
   ESP32_URL_SETTINGS: '/settings/esp32-url-config', // New route for ESP32 URL configuration
+  WARNING_TEST: '/settings/warning-test', // 경고 테스트 페이지
 };
 
 export const GEMINI_TEXT_MODEL = 'gemini-2.5-flash-preview-04-17';
@@ -22,7 +24,7 @@ export const DEFAULT_ANALYSIS_LOCATION = "거실";
 
 // IMPORTANT: This URL serves as an initial default. Users will configure their specific URL in the app settings.
 export const ESP32_WEB_SERVER_URL_DEFAULT = "http://YOUR_ESP32_IP_ADDRESS"; 
-export const ESP32_URL_STORAGE_KEY = 'memoriaEsp32WebServerUrl';
+export const ESP32_URL_STORAGE_KEY = 'esp32_url';
 
 
 export const GEMINI_ANALYSIS_PROMPT_TEMPLATE = (location: string): string => 

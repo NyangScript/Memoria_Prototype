@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '../components/PageLayout';
@@ -7,12 +6,26 @@ import { useBehaviorLogs } from '../contexts/BehaviorLogContext';
 import { BehaviorType, CategoryActivityData } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ROUTES } from '../constants';
+import { addAnalysisResultListener } from '../plugins/ForegroundServicePlugin';
 
 const AbnormalLogPage: React.FC = () => {
   const navigate = useNavigate();
-  const { getLogsByType, getBehaviorCategoryActivity } = useBehaviorLogs();
+  const { getLogsByType, getBehaviorCategoryActivity, addLog } = useBehaviorLogs();
   const abnormalLogs = getLogsByType(BehaviorType.ABNORMAL);
   const categoryData: CategoryActivityData[] = getBehaviorCategoryActivity(BehaviorType.ABNORMAL);
+
+  React.useEffect(() => {
+    const remove = addAnalysisResultListener((data: any) => {
+      if (data.behaviorType && (data.behaviorType === 'Abnormal' || data.behaviorType === 'Dangerous')) {
+        addLog({
+          type: data.behaviorType,
+          description: data.description,
+          location: 'ESP32',
+        });
+      }
+    });
+    return () => { remove.remove(); };
+  }, [addLog]);
 
   const formatXAxisTick = (tick: string) => {
     const maxLength = 10; 

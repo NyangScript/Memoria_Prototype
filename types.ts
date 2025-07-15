@@ -24,6 +24,7 @@ export interface BehaviorLogEntry {
   type: BehaviorType;
   description: string;
   location: string; 
+  warningMessage?: string; // TTS로 변환할 경고 메시지
 }
 
 export interface EmergencyContact {
@@ -47,6 +48,7 @@ export interface AnalysisResponse {
   behaviorType: BehaviorType;
   description: string;
   locationGuess?: string; 
+  warningMessage?: string; // ESP32에서 받은 경고 메시지
 }
 
 export interface UserProfile {
