@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDFKcdhM8bkLEjqyBmMKh3e9GzrBMjklTA"
+          "current_key": "YOUR_GEMINI_API_KEY"
         }
       ],
       "services": {
