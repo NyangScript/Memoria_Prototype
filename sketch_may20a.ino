@@ -3,15 +3,17 @@
 #include "esp_timer.h"
 #include "img_converters.h"
 #include "Arduino.h"
-#include "soc/soc.h"          // Disable brownout problems
-#include "soc/rtc_cntl_reg.h" // Disable brownout problems
+#include "soc/soc.h"
+#include "soc/rtc_cntl_reg.h"
 #include "driver/rtc_io.h"
-#include <WebServer.h> // ESP32 WebServer 라이브러리 사용
+#include <WebServer.h>
 
-// ESP32-S3 AI Camera PIN Map
+// --- Pinout for ESP32-S3 AI Camera ---
 #define PWDN_GPIO_NUM     -1
 #define RESET_GPIO_NUM    -1
 #define XCLK_GPIO_NUM     5
+#define SIOC_GPIO_NUM     9
+#define SIOD_GPIO_NUM     8
 #define Y9_GPIO_NUM       4
 #define Y8_GPIO_NUM       6
 #define Y7_GPIO_NUM       7
@@ -23,19 +25,19 @@
 #define VSYNC_GPIO_NUM    1
 #define HREF_GPIO_NUM     2
 #define PCLK_GPIO_NUM     15
-#define SIOD_GPIO_NUM  8
-#define SIOC_GPIO_NUM  9
 
-// Wi-Fi Credentials
-const char* ssid = "SL-Meeting";         // 실제 Wi-Fi SSID로 변경
-const char* password = "WMS1348B2F"; // 실제 Wi-Fi 비밀번호로 변경
+// --- Wi-Fi Credentials ---
+const char* ssid = "2F-CR1_CR2";     // Your Wi-Fi SSID
+const char* password = "WMS1348B2F"; // Your Wi-Fi Password
 
-WebServer streamServer(81); // MJPEG 스트리밍 서버 포트 81번
+WebServer streamServer(81); // Use port 81 for the MJPEG streaming server
 
+// --- MJPEG Streaming Constants ---
 static const char* _STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=123456789000000000000987654321";
 static const char* _STREAM_BOUNDARY = "\r\n--123456789000000000000987654321\r\n";
 static const char* _STREAM_PART = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
 
+// --- Function Prototypes ---
 void handleStream();
 void handleNotFound();
 
@@ -44,7 +46,6 @@ void setup() {
   Serial.setDebugOutput(true);
   Serial.println();
 
-  // 카메라 설정 최적화 (OV2640/OV5640 모두 호환)
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -65,121 +66,116 @@ void setup() {
   config.pin_pwdn = PWDN_GPIO_NUM;
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
-  config.frame_size = FRAMESIZE_VGA;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
-  config.fb_location = CAMERA_FB_IN_PSRAM;
+  config.frame_size = FRAMESIZE_VGA;
   config.jpeg_quality = 18;
   config.fb_count = 1;
+  config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
+  config.fb_location = CAMERA_FB_IN_DRAM;
 
-  if (config.pixel_format == PIXFORMAT_JPEG) {
-    if (psramFound()) {
-      config.jpeg_quality = 18;
-      config.fb_count = 2;
-      config.grab_mode = CAMERA_GRAB_LATEST;
-    } else {
-      config.frame_size = FRAMESIZE_QVGA;
-      config.fb_location = CAMERA_FB_IN_DRAM;
-      config.jpeg_quality = 20;
-      config.fb_count = 1;
-    }
-  } else {
-    config.frame_size = FRAMESIZE_240X240;
-#if CONFIG_IDF_TARGET_ESP32S3
+  // If PSRAM is available, use it for better performance
+  if (psramFound()) {
+    config.fb_location = CAMERA_FB_IN_PSRAM;
     config.fb_count = 2;
-#endif
+    config.grab_mode = CAMERA_GRAB_LATEST; // Discard old frames for lower latency
   }
 
-#if defined(CAMERA_MODEL_ESP_EYE)
-  pinMode(13, INPUT_PULLUP);
-  pinMode(14, INPUT_PULLUP);
-#endif
-
-  // 카메라 초기화
+  // Camera init
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) {
     Serial.printf("Camera init failed with error 0x%x", err);
     return;
   }
-  Serial.println("카메라 초기화 성공");
+  Serial.println("Camera initialized successfully.");
 
-  // 카메라 센서 설정
   sensor_t * s = esp_camera_sensor_get();
   if (s) {
-    s->set_vflip(s, 1);  // 수직 뒤집기
-    s->set_hmirror(s, 1);  // 수평 뒤집기
+    s->set_vflip(s, 1);   // Flip vertically
+    s->set_hmirror(s, 1); // Flip horizontally
   }
 
-  // Wi-Fi 연결
+  // Wi-Fi connection
   WiFi.begin(ssid, password);
-  WiFi.setSleep(false);
-  Serial.print("WiFi 연결 중...");
-  int wifi_retry = 0;
-  while (WiFi.status() != WL_CONNECTED && wifi_retry < 20) {
+  WiFi.setSleep(false); // Disable WiFi power save mode for low latency streaming
+  
+  Serial.print("Connecting to WiFi...");
+  int wifi_retry_count = 0;
+  while (WiFi.status() != WL_CONNECTED && wifi_retry_count < 20) {
     delay(500);
     Serial.print(".");
-    wifi_retry++;
+    wifi_retry_count++;
   }
+
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("\nWiFi 연결 실패");
+    Serial.println("\nFailed to connect to WiFi.");
     return;
   }
-  Serial.println("\nWiFi 연결 성공");
-  Serial.print("IP 주소: ");
+  Serial.println("\nWiFi connected.");
+  Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 
-  // MJPEG 스트리밍 서버 핸들러 설정
+  // Setup web server handlers
   streamServer.on("/stream", HTTP_GET, handleStream);
   streamServer.onNotFound(handleNotFound);
   streamServer.begin();
-  Serial.println("MJPEG 스트림 서버가 포트 81에서 시작됨 (/stream)");
+  Serial.println("MJPEG stream server started on port 81 at /stream");
 }
 
 void loop() {
   streamServer.handleClient();
-  delay(1);
+  delay(1); // Yield to other tasks
 }
 
-// 스트림 루프 최적화
+// Optimized handler for MJPEG streaming
+// This function avoids using the String class to prevent memory fragmentation and improve performance.
 void handleStream() {
- WiFiClient client = streamServer.client();
- if (!client.connected()) {
-   return;
- }
- String response = "HTTP/1.1 200 OK\r\n";
- response += "Content-Type: " + String(_STREAM_CONTENT_TYPE) + "\r\n";
- response += "Connection: keep-alive\r\n";
- response += "Access-Control-Allow-Origin: *\r\n";
- response += "\r\n";
- client.print(response);
- while (client.connected()) {
-   camera_fb_t * fb = esp_camera_fb_get();
-   if (!fb) {
-     Serial.println("Camera capture failed");
-     delay(10);
-     continue;
-   }
-   if(fb->format != PIXFORMAT_JPEG){
-     esp_camera_fb_return(fb);
-     continue;
-   }
-   client.print(_STREAM_BOUNDARY);
-   char buf[128];
-   sprintf(buf, _STREAM_PART, fb->len);
-   client.print(buf);
-   client.write(fb->buf, fb->len);
-   client.print("\r\n");
-   esp_camera_fb_return(fb);
- }
- Serial.println("Client disconnected from stream.");
+  WiFiClient client = streamServer.client();
+  if (!client.connected()) {
+    return;
+  }
+
+  // Send the HTTP header for the multipart stream
+  client.print("HTTP/1.1 200 OK\r\n");
+  client.print("Content-Type: ");
+  client.print(_STREAM_CONTENT_TYPE);
+  client.print("\r\n");
+  client.print("Connection: keep-alive\r\n");
+  client.print("Access-Control-Allow-Origin: *\r\n");
+  client.print("\r\n");
+
+  // Stream frames continuously
+  while (client.connected()) {
+    camera_fb_t *fb = esp_camera_fb_get();
+    if (!fb) {
+      Serial.println("Camera capture failed");
+      delay(10); // Wait a bit before retrying
+      continue;
+    }
+    
+    // Check if the format is JPEG (it should be, based on config)
+    if (fb->format != PIXFORMAT_JPEG) {
+      esp_camera_fb_return(fb);
+      continue;
+    }
+
+    // Write the boundary and content header
+    client.print(_STREAM_BOUNDARY);
+    char part_buf[128];
+    sprintf(part_buf, _STREAM_PART, fb->len);
+    client.print(part_buf);
+    
+    // Write the JPEG image data
+    client.write(fb->buf, fb->len);
+    client.print("\r\n");
+    
+    // Return the frame buffer to be reused
+    esp_camera_fb_return(fb);
+  }
+  Serial.println("Client disconnected from stream.");
 }
 
+// Handler for 404 Not Found errors
 void handleNotFound() {
- String message = "File Not Found\n\n";
- message += "URI: ";
- message += streamServer.uri();
- message += "\nMethod: ";
- message += (streamServer.method() == HTTP_GET) ? "GET" : "POST";
- message += "\nArguments: None\n";
- streamServer.send(404, "text/plain", message);
+  const char* message = "File Not Found\n\nURI: /stream\nMethod: GET\n";
+  streamServer.send(404, "text/plain", message);
 }
