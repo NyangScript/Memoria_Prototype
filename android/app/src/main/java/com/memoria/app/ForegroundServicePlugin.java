@@ -62,13 +62,13 @@ public class ForegroundServicePlugin extends Plugin {
     }
 
     @PluginMethod
-    public void setEsp32Url(PluginCall call) {
-        String url = call.getString("esp32_url", "");
-        Log.d("ForegroundServicePlugin", "setEsp32Url called with: " + url);
+    public void setFlaskUrl(PluginCall call) {
+        String url = call.getString("flask_url", "");
+        Log.d("ForegroundServicePlugin", "setFlaskUrl called with: " + url);
         if (!url.isEmpty()) {
             SharedPreferences prefs = getContext().getSharedPreferences("memoria_prefs", Context.MODE_PRIVATE);
-            prefs.edit().putString("esp32_url", url).apply();
-            Log.d("ForegroundServicePlugin", "Saved esp32_url: " + prefs.getString("esp32_url", "null"));
+            prefs.edit().putString("flask_url", url).apply();
+            Log.d("ForegroundServicePlugin", "Saved flask_url: " + prefs.getString("flask_url", "null"));
             call.resolve();
         } else {
             call.reject("URL이 비어있음");

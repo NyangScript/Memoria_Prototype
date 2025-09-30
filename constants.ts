@@ -23,8 +23,10 @@ export const LOCATIONS = ["Living Room", "Kitchen", "Hallway", "Utility Room", "
 export const DEFAULT_ANALYSIS_LOCATION = "거실"; 
 
 // IMPORTANT: This URL serves as an initial default. Users will configure their specific URL in the app settings.
-export const ESP32_WEB_SERVER_URL_DEFAULT = "http://YOUR_ESP32_IP_ADDRESS"; 
-export const ESP32_URL_STORAGE_KEY = 'esp32_url';
+export const ESP32_WEB_SERVER_URL_DEFAULT = 'http://192.168.0.100';
+export const ESP32_URL_STORAGE_KEY = 'memoriaEsp32Url';
+export const FLASK_SERVER_URL_DEFAULT = 'http://192.168.0.200:5000';
+export const FLASK_URL_STORAGE_KEY = 'memoriaFlaskUrl';
 
 
 export const GEMINI_ANALYSIS_PROMPT_TEMPLATE = (location: string): string => 

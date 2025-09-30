@@ -49,7 +49,7 @@ const PageComponentMap: { [key: string]: React.ReactElement } = {
 
 const AppContent: React.FC = () => {
   const { logs, addLog } = useBehaviorLogs();
-  const { esp32Url, isDefaultUrl } = useEsp32Config();
+  const { esp32Url, flaskUrl, isDefaultEsp32Url, isDefaultFlaskUrl } = useEsp32Config();
   const location = useLocation();
   const navigate = useNavigate();
   const lastLog = logs.length > 0 ? logs[0] : null;
@@ -178,17 +178,24 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     // Do not set up listener if URL is not configured
-    if (isDefaultUrl) return;
+    if (isDefaultEsp32Url) return;
 
     const handleIframeMessage = (event: MessageEvent) => {
       try {
-        // More robust origin check: only compare hostnames to avoid port conflicts.
-        if (event.origin !== window.origin && new URL(event.origin).hostname !== new URL(esp32Url).hostname) {
+        // flaskUrl/esp32Url 둘 다 허용
+        const flaskHost = flaskUrl ? new URL(flaskUrl).hostname : null;
+        const esp32Host = esp32Url ? new URL(esp32Url).hostname : null;
+        const eventHost = new URL(event.origin).hostname;
+        if (
+          event.origin !== window.origin &&
+          eventHost !== flaskHost &&
+          eventHost !== esp32Host
+        ) {
           return;
         }
       } catch (e) {
         console.warn("Could not validate message origin:", event.origin);
-        return; // Ignore if URLs are invalid and cannot be parsed
+        return;
       }
 
       if (event.data && event.data.type === 'MEMORIA_ANALYSIS_RESULT') {
@@ -218,7 +225,7 @@ const AppContent: React.FC = () => {
     return () => {
       window.removeEventListener('message', handleIframeMessage);
     };
-  }, [addLog, esp32Url, isDefaultUrl]);
+  }, [addLog, flaskUrl, esp32Url, isDefaultEsp32Url, isDefaultFlaskUrl]);
 
   // 알림에서 '주소 설정' 버튼 클릭 시 이동 처리
   useEffect(() => {

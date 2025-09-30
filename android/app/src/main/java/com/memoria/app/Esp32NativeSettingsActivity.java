@@ -13,7 +13,7 @@ public class Esp32NativeSettingsActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         EditText editText = new EditText(this);
-        editText.setHint("ESP32 주소 입력 (예: http://192.168.0.10:8080)");
+        editText.setHint("Flask 서버 주소 입력 (예: http://192.168.0.200:5000)");
 
         Button saveButton = new Button(this);
         saveButton.setText("저장");
@@ -32,7 +32,7 @@ public class Esp32NativeSettingsActivity extends Activity {
                     url = "http://" + url;
                 }
                 SharedPreferences prefs = getSharedPreferences("memoria_prefs", MODE_PRIVATE);
-                prefs.edit().putString("esp32_url", url).apply();
+                prefs.edit().putString("flask_url", url).apply();
                 finish();
             } else {
                 editText.setError("주소를 입력하세요");

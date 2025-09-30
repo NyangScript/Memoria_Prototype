@@ -66,7 +66,7 @@ public class ForegroundService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flag, int startId) {
         createNotificationChannel();
-        startEsp32Polling();
+        startFlaskPolling();
 
         // intent에서 BehaviorLog 데이터 가져오기
         String behaviorType = "모니터링 중...";
@@ -143,36 +143,36 @@ public class ForegroundService extends Service {
         return START_STICKY;
     }
 
-    private void startEsp32Polling() {
+    private void startFlaskPolling() {
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                fetchEsp32Analysis();
+                fetchFlaskAnalysis();
                 handler.postDelayed(this, interval);
             }
         }, interval);
     }
 
-    private String getEsp32Url() {
+    private String getFlaskUrl() {
         SharedPreferences prefs = getApplicationContext().getSharedPreferences("memoria_prefs", MODE_PRIVATE);
-        String url = prefs.getString("esp32_url", null);
-        Log.d("ForegroundService", "getEsp32Url: " + url);
+        String url = prefs.getString("flask_url", null);
+        Log.d("ForegroundService", "getFlaskUrl: " + url);
         if (url == null || url.isEmpty()) {
             return null;
         }
         return url;
     }
 
-    private void fetchEsp32Analysis() {
+    private void fetchFlaskAnalysis() {
         new Thread(() -> {
             try {
-                String baseUrl = getEsp32Url();
-                Log.d("ForegroundService", "fetchEsp32Analysis() - baseUrl: " + baseUrl);
+                String baseUrl = getFlaskUrl();
+                Log.d("ForegroundService", "fetchFlaskAnalysis() - baseUrl: " + baseUrl);
                 if (baseUrl == null) {
-                    updateNotificationWithAnalysis("{\"behaviorType\":\"주소 미설정\",\"description\":\"ESP32 주소를 앱에서 설정하세요.\",\"timestamp\":\"\"}");
+                    updateNotificationWithAnalysis("{\"behaviorType\":\"주소 미설정\",\"description\":\"Flask 주소를 앱에서 설정하세요.\",\"timestamp\":\"\"}");
                     return;
                 }
-                Log.d("ForegroundService", "Polling ESP32: " + baseUrl + "/latest_analysis");
+                Log.d("ForegroundService", "Polling Flask: " + baseUrl + "/latest_analysis");
                 URL url = new URL(baseUrl + "/latest_analysis");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
@@ -180,7 +180,7 @@ public class ForegroundService extends Service {
                 conn.setReadTimeout(2000);
 
                 int responseCode = conn.getResponseCode();
-                Log.d("ForegroundService", "ESP32 response code: " + responseCode);
+                Log.d("ForegroundService", "Flask response code: " + responseCode);
                 if (responseCode == 200) {
                     BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                     String inputLine;
@@ -190,7 +190,7 @@ public class ForegroundService extends Service {
                     }
                     in.close();
                     String responseStr = response.toString();
-                    Log.d("ForegroundService", "ESP32 response: " + responseStr);
+                    Log.d("ForegroundService", "Flask response: " + responseStr);
                     
                     // 중복 방지: 동일한 결과는 처리하지 않음
                     if (!responseStr.equals(lastAnalysisResult)) {
@@ -198,11 +198,11 @@ public class ForegroundService extends Service {
                         updateNotificationWithAnalysis(responseStr);
                     }
                 } else {
-                    updateNotificationWithAnalysis("{\"behaviorType\":\"ESP32 연결 실패\",\"description\":\"응답 코드: " + responseCode + "\",\"timestamp\":\"\"}");
+                    updateNotificationWithAnalysis("{\"behaviorType\":\"Flask 연결 실패\",\"description\":\"응답 코드: " + responseCode + "\",\"timestamp\":\"\"}");
                 }
             } catch (Exception e) {
-                Log.e("ForegroundService", "ESP32 fetch error", e);
-                updateNotificationWithAnalysis("{\"behaviorType\":\"ESP32 연결 실패\",\"description\":\"" + e.getMessage() + "\",\"timestamp\":\"\"}");
+                Log.e("ForegroundService", "Flask fetch error", e);
+                updateNotificationWithAnalysis("{\"behaviorType\":\"Flask 연결 실패\",\"description\":\"" + e.getMessage() + "\",\"timestamp\":\"\"}");
             }
         }).start();
     }

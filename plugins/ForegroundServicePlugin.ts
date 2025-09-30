@@ -9,7 +9,7 @@ export interface ForegroundServicePlugin {
     timestamp?: string;
   }): Promise<void>;
   stopForegroundService(): Promise<void>;
-  setEsp32Url(options: { esp32_url: string }): Promise<void>;
+  setFlaskUrl(options: { flask_url: string }): Promise<void>;
   getLocalLogs(): Promise<{ logs: string[] }>;
   clearLocalLogs(): Promise<void>;
   addListener(eventName: string, listenerFunc: (data: any) => void): Promise<void>;

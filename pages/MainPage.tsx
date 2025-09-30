@@ -47,18 +47,18 @@ const MainPage: React.FC = () => {
   const { profile, isLoading: isProfileLoading } = useUserProfile(); 
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  const { esp32Url, isLoading: isLoadingConfig, isDefaultUrl } = useEsp32Config();
+  const { flaskUrl, esp32Url, isLoading: isLoadingConfig, isDefaultFlaskUrl, isDefaultEsp32Url } = useEsp32Config();
   const [iframeKey, setIframeKey] = useState(Date.now());
   const [isIframeLoading, setIsIframeLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [nativeMonitoringStatus, setNativeMonitoringStatus] = useState<string>("백그라운드 모니터링 중...");
 
   const handleReload = useCallback(() => {
-    if (isDefaultUrl || isLoadingConfig) return;
+    if (isDefaultFlaskUrl || isLoadingConfig) return;
     setIsIframeLoading(true);
     setError(null);
     setIframeKey(Date.now());
-  }, [isDefaultUrl, isLoadingConfig]);
+  }, [isDefaultFlaskUrl, isLoadingConfig]);
 
   const handleIframeLoad = () => {
     setIsIframeLoading(false);
@@ -67,14 +67,14 @@ const MainPage: React.FC = () => {
 
   const handleIframeError = (e: React.SyntheticEvent<HTMLIFrameElement, Event>) => {
     setIsIframeLoading(false);
-    setError(`ESP32 웹 페이지(${esp32Url})를 불러오는데 실패했습니다. 다음을 확인해주세요:
+    setError(`ESP32 웹 페이지(${flaskUrl})를 불러오는데 실패했습니다. 다음을 확인해주세요:
       1. ESP32가 켜져 있고 네트워크에 연결되어 있는지.
-      2. 설정된 URL이 올바른지 (현재 URL: ${esp32Url}).
+      2. 설정된 URL이 올바른지 (현재 URL: ${flaskUrl}).
       3. 앱과 ESP32가 동일 네트워크에 있는지.`);
   };
 
   const handleRestartNativeMonitoring = useCallback(async () => {
-    if (isDefaultUrl || isLoadingConfig) return;
+    if (isDefaultFlaskUrl || isLoadingConfig) return;
     
     try {
       setNativeMonitoringStatus("백그라운드 모니터링 재시작 중...");
@@ -89,16 +89,16 @@ const MainPage: React.FC = () => {
       console.error('백그라운드 모니터링 재시작 실패:', error);
       setNativeMonitoringStatus("백그라운드 모니터링 실패");
     }
-  }, [isDefaultUrl, isLoadingConfig]);
+  }, [isDefaultFlaskUrl, isLoadingConfig]);
 
   useEffect(() => {
-    if (!isLoadingConfig && !isDefaultUrl) {
-        setIsIframeLoading(true); // Assume iframe will start loading
+    if (!isLoadingConfig && !isDefaultFlaskUrl) {
+        setIsIframeLoading(true);
         setError(null);
-    } else if (!isLoadingConfig && isDefaultUrl) {
-        setIsIframeLoading(false); // No iframe to load if URL is default/placeholder
+    } else if (!isLoadingConfig && isDefaultFlaskUrl) {
+        setIsIframeLoading(false);
     }
-  }, [esp32Url, isLoadingConfig, isDefaultUrl]);
+  }, [flaskUrl, isLoadingConfig, isDefaultFlaskUrl]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -152,24 +152,23 @@ const MainPage: React.FC = () => {
             <div className="flex space-x-2 w-full sm:w-auto">
               <button
                 onClick={handleReload}
-                disabled={isIframeLoading || isDefaultUrl || isLoadingConfig}
+                disabled={isIframeLoading || isDefaultFlaskUrl || isLoadingConfig}
                 className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-md shadow-sm transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="ESP32 웹 페이지 새로고침"
               >
-                <ArrowPathIcon className={`w-5 h-5 mr-2 ${isIframeLoading && !isDefaultUrl ? 'animate-spin' : ''}`} />
+                <ArrowPathIcon className={`w-5 h-5 mr-2 ${isIframeLoading && !isDefaultFlaskUrl ? 'animate-spin' : ''}`} />
                 새로고침
               </button>
             </div>
           </div>
 
-          {isDefaultUrl ? (
+          {isDefaultFlaskUrl || isDefaultEsp32Url ? (
             <div className="p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 rounded-md">
               <div className="flex items-start">
                 <InformationCircleIcon className="h-6 w-6 mr-3 flex-shrink-0" />
                 <div>
                   <p className="font-semibold">ESP32 서버 주소 설정 필요</p>
                   <p className="text-sm">
-                    ESP32 웹 서버의 주소가 설정되지 않았습니다. '{esp32Url}'는 유효한 주소가 아닙니다. 
                     설정 메뉴를 통해 올바른 주소를 입력해주세요.
                   </p>
                   <button
@@ -187,8 +186,8 @@ const MainPage: React.FC = () => {
               {(isIframeLoading && !error) && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 bg-opacity-85 z-10">
                   <ArrowPathIcon className="w-12 h-12 text-sky-500 animate-spin mb-3" />
-                  <p className="text-gray-600">ESP32 페이지 로딩 중...</p>
-                  <p className="text-xs text-gray-500 truncate max-w-xs">{esp32Url}</p>
+                  <p className="text-gray-600">Flask 페이지 로딩 중...</p>
+                  <p className="text-xs text-gray-500 truncate max-w-xs">{flaskUrl + '?esp32url=' + encodeURIComponent(esp32Url)}</p>
                 </div>
               )}
               {error && (
@@ -201,20 +200,19 @@ const MainPage: React.FC = () => {
                     className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                   >
                     <Cog6ToothIcon className="w-5 h-5 mr-2" />
-                    URL 설정 확인/변경
+                    지금 URL 설정하기
                   </button>
                 </div>
               )}
-              {!isDefaultUrl && (
                  <iframe
                     key={iframeKey}
-                    src={error ? 'about:blank' : esp32Url}
-                    className={`w-full h-full border-0 ${isIframeLoading || error ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
-                    title="ESP32 Web Page"
+                src={flaskUrl + '?esp32url=' + encodeURIComponent(esp32Url)}
+                title="실시간 촬영 및 분석"
+                className="w-full h-full border-0 bg-gray-100"
                     onLoad={handleIframeLoad}
                     onError={handleIframeError}
+                allow="camera; microphone; clipboard-read; clipboard-write"
                   />
-              )}
             </div>
           )}
         </div>
@@ -225,7 +223,7 @@ const MainPage: React.FC = () => {
             <h3 className="text-md font-semibold text-gray-700">백그라운드 모니터링</h3>
             <button
               onClick={handleRestartNativeMonitoring}
-              disabled={isDefaultUrl || isLoadingConfig}
+              disabled={isDefaultFlaskUrl || isLoadingConfig}
               className="flex items-center justify-center px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="백그라운드 모니터링 재시작"
             >
