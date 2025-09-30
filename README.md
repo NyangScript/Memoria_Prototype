@@ -1,8 +1,8 @@
 # Memoria의 전체 코드입니다.
 
-Flask_app 폴더에 로컬(안드로이도)로 통신하는 서버가 있고,\n
-ESP32의 코드는 sketch_may20a.ino 파일에서 확인 가능합니다.\n
-그 외 파일들은 모두 Memoria 앱 관련 코드입니다.\n
+Flask_app 폴더에 로컬(안드로이도)로 통신하는 서버가 있고,
+ESP32의 코드는 sketch_may20a.ino 파일에서 확인 가능합니다.
+그 외 파일들은 모두 Memoria 앱 관련 코드입니다.
 백그라운드 관련 내용은 android/app/src/main/java 폴더 안에서 확인 가능합니다.
 
 ## Memoria 작동 과정
