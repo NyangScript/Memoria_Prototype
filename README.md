@@ -1,14 +1,13 @@
-# Run and deploy your AI Studio app
+# Memoria의 전체 코드입ㄴ디ㅏ.
 
-This contains everything you need to run your app locally.
+Flask_app 폴더에 로컬(안드로이도)로 통신하는 서버가 있고,
+ESP32의 코드는 sketch_may20a.ino 파일에서 확인 가능합니다.
+그 외 파일들은 모두 Memoria 앱 관련 코드입니다.
+백그라운드 관련 내용은 android/app/src/main/java 폴더 안에서 확인 가능합니다.
 
-## Run Locally
+## Memoria 작동 과정
 
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+1. CCTV(ESP32)를 집에 설치합니다.
+2. 앱 파일을 다운받고, 서버 주소와 ESP의 IP주소를 입력합니다.
+   `초회 실행 시 메인화면에서 확인`
+3. 이제 정상작동합니다! 문제가 생긴다면 앱의 '오류 신고하기' 기능을 이용해주세요!
